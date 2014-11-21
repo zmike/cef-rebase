@@ -15,7 +15,7 @@ print "\nGenerating CEF version header file..."
 gyper = [ 'python', 'tools/make_version_header.py',
           '--header', 'include/cef_version.h',
           '--cef_version', 'VERSION',
-          '--chrome_version', '../chrome/VERSION',
+          '--chrome_version', 'SERVO_VERSION',
           '--cpp_header_dir', 'include' ]
 RunAction(cef_dir, gyper)
 
@@ -97,7 +97,7 @@ if bool(int(os.environ.get('WIN_CUSTOM_TOOLCHAIN', '0'))):
     RunAction(out_dir_abs, cmd)
 
 os.environ['CEF_DIRECTORY'] = os.path.basename(cef_dir)
-gyper = [ 'python', '../build/gyp_chromium', 'cef.gyp', '-I', 'cef.gypi' ]
+gyper = [ 'python', 'cef.gyp', '-I', 'cef.gypi' ]
 if custom_toolchain:
   # Disable GYP's auto-detection of the VS install.
   gyper.extend(['-G', 'ninja_use_custom_environment_files'])
