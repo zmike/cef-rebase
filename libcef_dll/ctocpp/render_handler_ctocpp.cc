@@ -283,6 +283,43 @@ void CefRenderHandlerCToCpp::OnScrollOffsetChanged(
       y);
 }
 
+bool CefRenderHandlerCToCpp::GetBackingRect(CefRefPtr<CefBrowser> browser,
+    CefRect& rect) {
+  if (CEF_MEMBER_MISSING(struct_, get_backing_rect))
+    return false;
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Verify param: browser; type: refptr_diff
+  DCHECK(browser.get());
+  if (!browser.get())
+    return false;
+
+  // Execute
+  int _retval = struct_->get_backing_rect(struct_,
+      CefBrowserCppToC::Wrap(browser),
+      &rect);
+
+  // Return type: bool
+  return _retval?true:false;
+}
+
+void CefRenderHandlerCToCpp::OnPresent(CefRefPtr<CefBrowser> browser) {
+  if (CEF_MEMBER_MISSING(struct_, on_present))
+    return;
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Verify param: browser; type: refptr_diff
+  DCHECK(browser.get());
+  if (!browser.get())
+    return;
+
+  // Execute
+  struct_->on_present(struct_,
+      CefBrowserCppToC::Wrap(browser));
+}
+
 
 // CONSTRUCTOR - Do not edit by hand.
 

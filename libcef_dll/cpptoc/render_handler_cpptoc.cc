@@ -348,9 +348,57 @@ void CEF_CALLBACK render_handler_on_scroll_offset_changed(
       CefBrowserCToCpp::Wrap(browser),
       x,
       y);
+}  // namespace
+
+int CEF_CALLBACK render_handler_get_backing_rect(
+    struct _cef_render_handler_t* self, cef_browser_t* browser,
+    cef_rect_t* rect) {
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self)
+    return 0;
+  // Verify param: browser; type: refptr_diff
+  DCHECK(browser);
+  if (!browser)
+    return 0;
+  // Verify param: rect; type: simple_byref
+  DCHECK(rect);
+  if (!rect)
+    return 0;
+
+  // Translate param: rect; type: simple_byref
+  CefRect rectVal = rect?*rect:CefRect();
+
+  // Execute
+  bool _retval = CefRenderHandlerCppToC::Get(self)->GetBackingRect(
+      CefBrowserCToCpp::Wrap(browser),
+      rectVal);
+
+  // Restore param: rect; type: simple_byref
+  if (rect)
+    *rect = rectVal;
+
+  // Return type: bool
+  return _retval;
 }
 
-}  // namespace
+void CEF_CALLBACK render_handler_on_present(struct _cef_render_handler_t* self,
+    cef_browser_t* browser) {
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self)
+    return;
+  // Verify param: browser; type: refptr_diff
+  DCHECK(browser);
+  if (!browser)
+    return;
+
+  // Execute
+  CefRenderHandlerCppToC::Get(self)->OnPresent(
+      CefBrowserCToCpp::Wrap(browser));
+}
 
 
 // CONSTRUCTOR - Do not edit by hand.
@@ -368,6 +416,8 @@ CefRenderHandlerCppToC::CefRenderHandlerCppToC() {
   GetStruct()->update_drag_cursor = render_handler_update_drag_cursor;
   GetStruct()->on_scroll_offset_changed =
       render_handler_on_scroll_offset_changed;
+  struct_.struct_.get_backing_rect = render_handler_get_backing_rect;
+  struct_.struct_.on_present = render_handler_on_present;
 }
 
 template<> CefRefPtr<CefRenderHandler> CefCppToC<CefRenderHandlerCppToC,

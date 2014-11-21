@@ -10,7 +10,6 @@
 // for more information.
 //
 
-#include "include/cef_version.h"
 #include "libcef_dll/ctocpp/command_line_ctocpp.h"
 #include "libcef_dll/transfer_util.h"
 
@@ -18,13 +17,6 @@
 // STATIC METHODS - Body may be edited by hand.
 
 CefRefPtr<CefCommandLine> CefCommandLine::CreateCommandLine() {
-  const char* api_hash = cef_api_hash(0);
-  if (strcmp(api_hash, CEF_API_HASH_PLATFORM)) {
-    // The libcef API hash does not match the current header API hash.
-    NOTREACHED();
-    return NULL;
-  }
-
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute
@@ -35,13 +27,6 @@ CefRefPtr<CefCommandLine> CefCommandLine::CreateCommandLine() {
 }
 
 CefRefPtr<CefCommandLine> CefCommandLine::GetGlobalCommandLine() {
-  const char* api_hash = cef_api_hash(0);
-  if (strcmp(api_hash, CEF_API_HASH_PLATFORM)) {
-    // The libcef API hash does not match the current header API hash.
-    NOTREACHED();
-    return NULL;
-  }
-
   // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
 
   // Execute

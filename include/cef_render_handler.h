@@ -175,6 +175,23 @@ class CefRenderHandler : public virtual CefBase {
   virtual void OnScrollOffsetChanged(CefRefPtr<CefBrowser> browser,
                                      double x,
                                      double y) {}
+
+  ///
+  // Called to retrieve the backing size of the view rectangle which is
+  // relative to screen coordinates. On HiDPI displays, the backing size
+  // can differ from the view size as returned by |GetViewRect|. Return
+  // true if the rectangle was provided.
+  ///
+  /*--cef()--*/
+  virtual bool GetBackingRect(CefRefPtr<CefBrowser> browser,
+                              CefRect& rect) =0;
+
+  ///
+  // Called when an element should be presented (e.g. double buffers should
+  // page flip). This is called only during accelerated compositing.
+  ///
+  /*--cef()--*/
+  virtual void OnPresent(CefRefPtr<CefBrowser> browser) =0;
 };
 
 #endif  // CEF_INCLUDE_CEF_RENDER_HANDLER_H_

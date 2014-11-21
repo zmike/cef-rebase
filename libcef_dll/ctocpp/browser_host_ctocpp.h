@@ -88,10 +88,12 @@ class CefBrowserHostCToCpp
       const CefMouseEvent& event, DragOperationsMask allowed_ops) OVERRIDE;
   void DragTargetDragOver(const CefMouseEvent& event,
       DragOperationsMask allowed_ops) OVERRIDE;
-  void DragTargetDragLeave() OVERRIDE;
-  void DragTargetDrop(const CefMouseEvent& event) OVERRIDE;
-  void DragSourceEndedAt(int x, int y, DragOperationsMask op) OVERRIDE;
-  void DragSourceSystemDragEnded() OVERRIDE;
+  virtual void DragTargetDragLeave() OVERRIDE;
+  virtual void DragTargetDrop(const CefMouseEvent& event) OVERRIDE;
+  virtual void DragSourceEndedAt(int x, int y, DragOperationsMask op) OVERRIDE;
+  virtual void DragSourceSystemDragEnded() OVERRIDE;
+  virtual void Composite() OVERRIDE;
+  virtual void InitializeCompositing() OVERRIDE;
 };
 
 #endif  // USING_CEF_SHARED
