@@ -102,6 +102,13 @@ def get_rust_file_name(cppname):
     """ Convert a C++ header file name to a Rust file name. """
     return cppname[:-2]+'.rs'
 
+def get_rust_user_module_name(cppname):
+    """ Convert a C++ header file name to the name of the Rust module that provides its \
+        implementation in Servo. """
+    if cppname[0:4] != 'cef_':
+        raise Exception("expected C++ header file to begin with 'cef_'")
+    return cppname[4:-2]
+
 def get_rust_identifier(identifier):
     """ Converts an identifier to a valid Rust identifier. """
     if identifier == 'type':
@@ -1979,7 +1986,10 @@ class obj_analysis:
         """ Return the simple raw Rust type. """
         result = ''
         if self.is_byaddr() or self.is_byref():
-            result += '*mut '
+            if self.is_const():
+                result += '*const '
+            else:
+                result += '*mut '
         result += self.result_value_raw_rust
         return result
     
@@ -1987,7 +1997,10 @@ class obj_analysis:
         """ Return the wrapped Rust simple type. """
         result = ''
         if self.is_byaddr() or self.is_byref():
-            result += '&mut '
+            if self.is_const():
+                result += '&'
+            else:
+                result += '&mut '
         result += self.result_value_wrapped_rust
         return result
     
