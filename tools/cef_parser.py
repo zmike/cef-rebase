@@ -98,6 +98,16 @@ def get_capi_file_name(cppname):
     """ Convert a C++ header file name to a C API header file name. """
     return cppname[:-2]+'_capi.h'
 
+def get_rust_file_name(cppname):
+    """ Convert a C++ header file name to a Rust file name. """
+    return cppname[:-2]+'.rs'
+
+def get_rust_identifier(identifier):
+    """ Converts an identifier to a valid Rust identifier. """
+    if identifier == 'type':
+        return 'ty'
+    return identifier
+
 def get_capi_name(cppname, isclassname, prefix = None):
     """ Convert a C++ CamelCaps name to a C API underscore name. """
     result = ''
@@ -131,6 +141,74 @@ def get_wrapper_type_enum(cppname):
     """ Returns the wrapper type enumeration value for the specified C++ class
         name. """
     return 'WT_'+get_capi_name(cppname, False)[4:].upper()
+
+def get_raw_rust_name(cppname, isclassname, prefix = None, include_module = False):
+    """Convert a C++ CamelCaps name to a raw Rust API underscore name, possibly with module
+    included."""
+    capi_name = ''
+    lastchr = ''
+    for chr in cppname:
+        # add an underscore if the current character is an upper case letter
+        # and the last character was a lower case letter
+        if len(capi_name) > 0 and not chr.isdigit() \
+            and string.upper(chr) == chr \
+            and not string.upper(lastchr) == lastchr:
+            capi_name += '_'
+        capi_name += string.lower(chr)
+        lastchr = chr
+  
+    if include_module:
+        result = 'interfaces::' + capi_name
+    else:
+        result = capi_name
+    if isclassname:
+        result += '_t'
+        
+    if not prefix is None:
+        if prefix[0:3] == 'cef':
+            # if the prefix name is duplicated in the function name
+            # remove that portion of the function name
+            subprefix = prefix[3:]
+            pos = result.find(subprefix)
+            if pos >= 0:
+                result = result[0:pos]+ result[pos+len(subprefix):]
+        result = prefix+'_'+result
+        
+    return result
+
+def get_wrapped_rust_name(cppname, isclassname, prefix = None, include_module = False):
+    """ Convert a C++ CamelCaps name to a wrapped Rust API name, possibly with module included."""
+    if isclassname:
+        rust_name = cppname
+    else:
+        rust_name = ''
+        lastchr = ''
+        for chr in cppname:
+            # add an underscore if the current character is an upper case letter
+            # and the last character was a lower case letter
+            if len(capi_name) > 0 and not chr.isdigit() \
+                and string.upper(chr) == chr \
+                and not string.upper(lastchr) == lastchr:
+                rust_name += '_'
+            rust_name += string.lower(chr)
+            lastchr = chr
+  
+    if include_module:
+        result = 'interfaces::' + rust_name
+    else:
+        result = rust_name
+        
+    if not prefix is None:
+        if prefix[0:3] == 'cef':
+            # if the prefix name is duplicated in the function name
+            # remove that portion of the function name
+            subprefix = prefix[3:]
+            pos = result.find(subprefix)
+            if pos >= 0:
+                result = result[0:pos]+ result[pos+len(subprefix):]
+        result = prefix+'_'+result
+        
+    return result
 
 def get_prev_line(body, pos):
     """ Retrieve the start and end positions and value for the line immediately
@@ -168,12 +246,22 @@ def get_comment(body, name):
     result.reverse()
     return result
 
-def format_comment(comment, indent, translate_map = None, maxchars = 80):
+def format_comment(comment,
+                   indent,
+                   translate_map = None,
+                   maxchars = 80,
+                   prevent_rust_doc_comment_confusion = False):
     """ Return the comments array as a formatted string. """
     result = ''
     wrapme = ''
     hasemptyline = False
     for line in comment:
+        # if the line has a leading `/`, that can confuse Rust into thinking the line is a
+        # documentation comment, so remove it
+        if prevent_rust_doc_comment_confusion and not line is None and len(line) > 0 and \
+                line[0:1] == '/':
+            line = line[1:]
+
         # if the line starts with a leading space, remove that space
         if not line is None and len(line) > 0 and line[0:1] == ' ':
             line = line[1:]
@@ -377,37 +465,71 @@ _cre_space  = '[\s]{1,}'
 _cre_virtual = '(?:[\s]{1,}virtual){0,1}'
 
 # Simple translation types. Format is:
-#   'cpp_type' : ['capi_type', 'capi_default_value']
+#   'cpp_type' : ['capi_type', 'capi_default_value', 'raw_rust_type', 'rust_wrapped_type']
 _simpletypes = {
-    'void' : ['void', ''],
-    'void*' : ['void*', 'NULL'],
-    'int' : ['int', '0'],
-    'int32' : ['int32', '0'],
-    'uint32' : ['uint32', '0'],
-    'int64' : ['int64', '0'],
-    'uint64' : ['uint64', '0'],
-    'double' : ['double', '0'],
-    'float' : ['float', '0'],
-    'long' : ['long', '0'],
-    'unsigned long' : ['unsigned long', '0'],
-    'long long' : ['long long', '0'],
-    'size_t' : ['size_t', '0'],
-    'bool' : ['int', '0'],
-    'char': ['char', '0'],
-    'char* const': ['char* const', 'NULL'],
-    'cef_color_t': ['cef_color_t', '0'],
-    'cef_json_parser_error_t': ['cef_json_parser_error_t', 'JSON_NO_ERROR'],
-    'CefCursorHandle' : ['cef_cursor_handle_t', 'kNullCursorHandle'],
-    'CefEventHandle' : ['cef_event_handle_t', 'kNullEventHandle'],
-    'CefWindowHandle' : ['cef_window_handle_t', 'kNullWindowHandle'],
-    'CefTextInputContext' : ['cef_text_input_context_t' ,'NULL'],
-    'CefPoint' : ['cef_point_t', 'CefPoint()'],
-    'CefRect' : ['cef_rect_t', 'CefRect()'],
-    'CefSize' : ['cef_size_t', 'CefSize()'],
-    'CefDraggableRegion' : ['cef_draggable_region_t', 'CefDraggableRegion()'],
-    'CefPageRange' : ['cef_page_range_t', 'CefPageRange()'],
-    'CefThreadId' : ['cef_thread_id_t', 'TID_UI'],
-    'CefTime' : ['cef_time_t', 'CefTime()'],
+    'void' : ['void', '', '()', '()'],
+    'void*' : ['void*', 'NULL', '*mut libc::c_void', '*mut libc::c_void'],
+    'int' : ['int', '0', 'libc::c_int', 'libc::c_int'],
+    'int32' : ['int32', '0', 'i32', 'i32'],
+    'uint32' : ['uint32', '0', 'u32', 'u32'],
+    'int64' : ['int64', '0', 'i64', 'i64'],
+    'uint64' : ['uint64', '0', 'u64', 'u64'],
+    'double' : ['double', '0', 'libc::c_double', 'libc::c_double'],
+    'float' : ['float', '0', 'libc::c_float', 'libc::c_float'],
+    'long' : ['long', '0', 'libc::c_long', 'libc::c_long'],
+    'unsigned long' : ['unsigned long', '0', 'libc::c_ulong', 'libc::c_ulong'],
+    'long long' : ['long long', '0', 'libc::c_longlong', 'libc::c_longlong'],
+    'size_t' : ['size_t', '0', 'libc::size_t', 'libc::size_t'],
+    'bool' : ['int', '0', 'libc::c_int', 'libc::c_int'],
+    'char': ['char', '0', 'libc::c_char', 'libc::c_char'],
+    'char* const': ['char* const', 'NULL', '*const libc::c_char', '&str'],
+    'cef_color_t': ['cef_color_t', '0', 'u32', 'u32'],
+    'cef_json_parser_error_t': [
+        'cef_json_parser_error_t',
+        'JSON_NO_ERROR',
+        'types::cef_json_parser_error_t',
+        'types::cef_json_parser_error_t'
+    ],
+    'CefCursorHandle' : [
+        'cef_cursor_handle_t',
+        'kNullCursorHandle',
+        'types::cef_cursor_handle_t',
+        'types::cef_cursor_handle_t'
+    ],
+    'CefEventHandle' : [
+        'cef_event_handle_t',
+        'kNullEventHandle',
+        'types::cef_event_handle_t',
+        'types::cef_event_handle_t'
+    ],
+    'CefWindowHandle' : [
+        'cef_window_handle_t',
+        'kNullWindowHandle',
+        'types::cef_window_handle_t',
+        'types::cef_window_handle_t'
+    ],
+    'CefTextInputContext' : [
+        'cef_text_input_context_t',
+        'NULL',
+        'types::cef_text_input_context_t',
+        'types::cef_text_input_context_t'
+    ],
+    'CefPoint' : ['cef_point_t', 'CefPoint()', 'types::cef_point_t', 'types::cef_point_t'],
+    'CefRect' : ['cef_rect_t', 'CefRect()', 'types::cef_rect_t', 'types::cef_rect_t'],
+    'CefSize' : ['cef_size_t', 'CefSize()', 'types::cef_size_t', 'types::cef_size_t'],
+    'CefPageRange' : [
+        'cef_page_range_t',
+        'CefPageRange()',
+        'types::cef_page_range_t',
+        'types::cef_page_range_t'
+    ],
+    'CefThreadId' : [
+        'cef_thread_id_t',
+        'TID_UI',
+        'types::cef_thread_id_t',
+        'types::cef_thread_id_t'
+    ],
+    'CefTime' : ['cef_time_t', 'CefTime()', 'types::cef_time_t', 'types::cef_time_t'],
 }
 
 def get_function_impls(content, ident):
@@ -850,6 +972,14 @@ class obj_class:
 
         return False
 
+    def get_raw_rust_name(self):
+        """ Return the raw Rust structure name for this class. """
+        return get_raw_rust_name(self.name, True, None, True)
+    
+    def get_wrapped_rust_name(self, include_module=True):
+        """ Return the wrapped Rust structure name for this class. """
+        return get_wrapped_rust_name(self.name, True, None, include_module)
+    
     def get_comment(self):
         """ Return the class comment as an array of lines. """
         return self.comment
@@ -1057,6 +1187,18 @@ class obj_function:
             return self.attribs['capi_name']
         return get_capi_name(self.name, False, prefix)
 
+    def get_raw_rust_name(self, prefix = None):
+        """ Return the raw Rust function name. """
+        if 'capi_name' in self.attribs:
+            return self.attribs['capi_name']
+        return get_raw_rust_name(self.name, False, prefix, False)
+    
+    def get_wrapped_rust_name(self, prefix = None):
+        """ Return the wrapped Rust function name. """
+        if 'wrapped_rust_name' in self.attribs:
+            return self.attribs['wrapped_rust_name']
+        return get_wrapped_rust_name(self.name, False, prefix, False)
+    
     def get_comment(self):
         """ Return the function comment as an array of lines. """
         return self.comment
@@ -1139,6 +1281,81 @@ class obj_function:
                         args.append('size_t* '+type_name+'Count')
                     args.append(dict['value'])
 
+        return { 'retval' : retval, 'name' : name, 'args' : args }
+            
+    def get_raw_rust_parts(self, prefix = None):
+        """ Return the parts of the raw Rust API function definition. """
+        retval = ''
+        dict = self.retval.get_type().get_raw_rust()
+        if dict['format'] == 'single':
+            retval = dict['value']
+            
+        name = self.get_raw_rust_name(prefix)
+        args = []
+        
+        if isinstance(self, obj_function_virtual):
+            # virtual functions get themselves as the first argument
+            str = 'this: '
+            if isinstance(self, obj_function_virtual) and self.is_const():
+                # const virtual functions get const self pointers
+                str += '*const '+self.parent.get_capi_name()
+            else:
+                str += '*mut '+self.parent.get_capi_name()
+            args.append(str)
+        
+        if len(self.arguments) > 0:
+            for cls in self.arguments:
+                type = cls.get_type()
+                dict = type.get_raw_rust()
+                if dict['format'] == 'single':
+                    args.append(dict['value'])
+                elif dict['format'] == 'multi-arg':
+                    # add an additional argument for the size of the array
+                    type_name = type.get_name()
+                    if type.is_const():
+                        # for const arrays pass the size argument by value
+                        args.append(type_name+'_count: libc::size_t')
+                    else:
+                        # for non-const arrays pass the size argument by address
+                        args.append(type_name+'_count: *mut libc::size_t')
+                    args.append(dict['value'])
+        
+        return { 'retval' : retval, 'name' : name, 'args' : args }
+
+    def get_capi_proto(self, defined_structs = [], prefix = None):
+        """ Return the prototype of the C API function. """
+        parts = self.get_capi_parts(defined_structs, prefix)
+        result = parts['retval']+' '+parts['name']+ \
+                 '('+string.join(parts['args'], ', ')+')'
+        return result
+
+    def get_wrapped_rust_parts(self, prefix = None):
+        """ Return the parts of the wrapped Rust API function definition. """
+        retval = ''
+        dict = self.retval.get_type().get_wrapped_rust()
+        if dict['format'] == 'single':
+            retval = dict['value']
+            
+        name = self.get_raw_rust_name(prefix)
+        args = []
+        
+        if len(self.arguments) > 0:
+            for cls in self.arguments:
+                type = cls.get_type()
+                dict = type.get_wrapped_rust()
+                if dict['format'] == 'single':
+                    args.append(dict['value'])
+                elif dict['format'] == 'multi-arg':
+                    # add an additional argument for the size of the array
+                    type_name = type.get_name()
+                    if type.is_const():
+                        # for const arrays pass the size argument by value
+                        args.append(type_name+'_count: libc::size_t')
+                    else:
+                        # for non-const arrays pass the size argument by address
+                        args.append(type_name+'_count: *mut libc::size_t')
+                    args.append(dict['value'])
+        
         return { 'retval' : retval, 'name' : name, 'args' : args }
 
     def get_capi_proto(self, defined_structs = [], prefix = None):
@@ -1498,6 +1715,8 @@ class obj_analysis:
         self.value = value
         self.result_type = 'unknown'
         self.result_value = None
+        self.result_value_raw_rust = None
+        self.result_value_wrapped_rust = None
         self.result_default = None
         self.refptr_type = None
 
@@ -1565,6 +1784,9 @@ class obj_analysis:
         self.result_type = translation.result_type
         self.result_value = translation.result_value
 
+        self.result_value_raw_rust = translation.result_value_raw_rust
+        self.result_value_wrapped_rust = translation.result_value_wrapped_rust
+        
     def _check_advanced(self, value):
         # check for vectors
         if value.find('std::vector') == 0:
@@ -1573,7 +1795,15 @@ class obj_analysis:
             self.result_value = [
                 self._get_basic(val)
             ]
+            self.result_value_raw_rust = [
+                self._get_basic(val)
+            ]
+            self.result_value_wrapped_rust = [
+                self._get_basic(val)
+            ]
             self.result_value[0]['vector_type'] = val
+            self.result_value_raw_rust[0]['vector_type'] = val
+            self.result_value_wrapped_rust[0]['vector_type'] = val
             return True
 
         # check for maps
@@ -1582,6 +1812,14 @@ class obj_analysis:
             vals = string.split(value[9:-1], ',')
             if len(vals) == 2:
                 self.result_value = [
+                    self._get_basic(string.strip(vals[0])),
+                    self._get_basic(string.strip(vals[1]))
+                ]
+                self.result_value_raw_rust = [
+                    self._get_basic(string.strip(vals[0])),
+                    self._get_basic(string.strip(vals[1]))
+                ]
+                self.result_value_wrapped_rust = [
                     self._get_basic(string.strip(vals[0])),
                     self._get_basic(string.strip(vals[1]))
                 ]
@@ -1596,6 +1834,14 @@ class obj_analysis:
                     self._get_basic(string.strip(vals[0])),
                     self._get_basic(string.strip(vals[1]))
                 ]
+                self.result_value_raw_rust = [
+                    self._get_basic(string.strip(vals[0])),
+                    self._get_basic(string.strip(vals[1]))
+                ]
+                self.result_value_wrapped_rust = [
+                    self._get_basic(string.strip(vals[0])),
+                    self._get_basic(string.strip(vals[1]))
+                ]
                 return True
 
         # check for basic types
@@ -1603,6 +1849,8 @@ class obj_analysis:
         if not basic is None:
             self.result_type = basic['result_type']
             self.result_value = basic['result_value']
+            self.result_value_raw_rust = basic['result_value_raw_rust']
+            self.result_value_wrapped_rust = basic['result_value_wrapped_rust']
             if 'refptr_type' in basic:
                 self.refptr_type = basic['refptr_type']
             if 'result_default' in basic:
@@ -1616,7 +1864,9 @@ class obj_analysis:
         if value == "CefString":
             return {
                 'result_type' : 'string',
-                'result_value' : None
+                'result_value' : None,
+                'result_value_raw_rust' : None,
+                'result_value_wrapped_rust' : None
             }
 
         # check for simple direct translations
@@ -1625,13 +1875,17 @@ class obj_analysis:
                 'result_type' : 'simple',
                 'result_value' : _simpletypes[value][0],
                 'result_default' : _simpletypes[value][1],
+                'result_value_raw_rust' : _simpletypes[value][2],
+                'result_value_wrapped_rust' : _simpletypes[value][3],
             }
 
         # check if already a C API structure
         if value[-2:] == '_t':
             return {
                 'result_type' : 'structure',
-                'result_value' : value
+                'result_value' : value,
+                'result_value_raw_rust' : 'types::' + value,
+                'result_value_wrapped_rust' : 'types::' + value
             }
 
         # check for CEF reference pointers
@@ -1641,6 +1895,8 @@ class obj_analysis:
             return {
                 'result_type' : 'refptr',
                 'result_value' : get_capi_name(list[0], True)+'*',
+                'result_value_raw_rust' : '*mut '+get_raw_rust_name(list[0], True, None, True),
+                'result_value_wrapped_rust' : get_wrapped_rust_name(list[0], True, None, True),
                 'refptr_type' : list[0]
             }
 
@@ -1648,7 +1904,9 @@ class obj_analysis:
         if value[0:3] == 'Cef' and value[-4:] != 'List':
             return {
                 'result_type' : 'structure',
-                'result_value' : get_capi_name(value, True)
+                'result_value' : get_capi_name(value, True),
+                'result_value_raw_rust' : get_raw_rust_name(value, True, None, True),
+                'result_value_wrapped_rust' : get_wrapped_rust_name(value, True, None, True)
             }
 
         return None
@@ -1716,6 +1974,23 @@ class obj_analysis:
             result += '*'
         return result
 
+    
+    def get_result_raw_rust_simple_type(self):
+        """ Return the simple raw Rust type. """
+        result = ''
+        if self.is_byaddr() or self.is_byref():
+            result += '*mut '
+        result += self.result_value_raw_rust
+        return result
+    
+    def get_result_rust_wrapped_simple_type(self):
+        """ Return the wrapped Rust simple type. """
+        result = ''
+        if self.is_byaddr() or self.is_byref():
+            result += '&mut '
+        result += self.result_value_wrapped_rust
+        return result
+    
     def get_result_simple_default(self):
         """ Return the default value fo the basic type. """
         return self.result_default
@@ -1738,6 +2013,17 @@ class obj_analysis:
             result += '*'
         return result
 
+    
+    def get_result_raw_rust_refptr_type(self):
+        """ Return the refptr type for raw Rust. """
+        result = self.result_value_raw_rust
+        return result
+    
+    def get_result_rust_wrapped_refptr_type(self):
+        """ Return the refptr type for wrapped Rust. """
+        result = self.result_value_wrapped_rust
+        return result
+    
     def is_result_struct(self):
         """ Returns true if this is a structure type. """
         return (self.result_type == 'structure')
@@ -1764,6 +2050,30 @@ class obj_analysis:
             result += '*'
         return result
 
+    def get_result_raw_rust_struct_type(self):
+        """ Return the structure or enumeration type formatted for raw Rust. """
+        result = ''
+        is_enum = self.is_result_struct_enum()
+        if not is_enum:
+            if self.is_const():
+                result += '*const '
+            else:
+                result += '*mut '
+        result += self.result_value_raw_rust
+        return result
+    
+    def get_result_rust_wrapped_struct_type(self):
+        """ Return the structure or enumeration type formatted for wrapped Rust. """
+        result = ''
+        is_enum = self.is_result_struct_enum()
+        if not is_enum:
+            if self.is_const():
+                result += '&'
+            else:
+                result += '&mut '
+        result += self.result_value_wrapped_rust
+        return result
+    
     def is_result_string(self):
         """ Returns true if this is a string type. """
         return (self.result_type == 'string')
@@ -1780,6 +2090,32 @@ class obj_analysis:
             return 'cef_string_t*'
         # Const parameters use the const string struct.
         return 'const cef_string_t*'
+
+    def get_result_raw_rust_string_type(self):
+        """ Return the string type formatted for raw Rust. """
+        if not self.has_name():
+            # Return values are string structs that the user must free. Use
+            # the name of the structure as a hint.
+            return 'types::cef_string_userfree_t'
+        elif not self.is_const() and (self.is_byref() or self.is_byaddr()):
+            # Parameters passed by reference or address. Use the normal
+            # non-const string struct.
+            return '*mut types::cef_string_t'
+        # Const parameters use the const string struct.
+        return '*const types::cef_string_t'
+
+    def get_result_rust_wrapped_string_type(self):
+        """ Return the string type formatted for raw Rust. """
+        if not self.has_name():
+            # Return values are string structs that the user must free. Use
+            # the name of the structure as a hint.
+            return 'String'
+        elif not self.is_const() and (self.is_byref() or self.is_byaddr()):
+            # Parameters passed by reference or address. Use the normal
+            # non-const string struct.
+            return '*mut types::cef_string_t'
+        # Const parameters use the const string struct.
+        return '&str'
 
     def is_result_vector(self):
         """ Returns true if this is a vector type. """
@@ -1837,7 +2173,82 @@ class obj_analysis:
         # and a size parameter
         result['format'] = 'multi-arg'
         return result
-
+    
+    def get_result_raw_rust_vector_type(self):
+        """ Return the vector type, formatted for raw Rust. """
+        if not self.has_name():
+            raise Exception('Cannot use vector as a return type')
+        
+        type = self.result_value[0]['result_type']
+        value = self.result_value[0]['result_value_raw_rust']
+        
+        result = {}
+        if type == 'string':
+            result['value'] = 'types::cef_string_list_t'
+            result['format'] = 'single'
+            return result
+        
+        if type == 'simple':
+            if self.is_const():
+                str = '*const '
+            else:
+                str = '*mut '
+            str += value
+            result['value'] = str
+        elif type == 'refptr':
+            if self.is_const():
+                str = '*const '
+            else:
+                str = '*mut '
+            str += value
+            result['value'] = str
+        else:
+            raise Exception('Unsupported vector type: '+type)
+        
+        # vector values must be passed as a value array parameter
+        # and a size parameter
+        result['format'] = 'multi-arg'
+        return result
+    
+    def get_result_rust_wrapped_vector_type(self):
+        """ Return the vector type, formatted for wrapped Rust. """
+        # FIXME(pcwalton): We don't handle this very well at the moment. Handling this properly is 
+        # going to be annoying, since we will have to marshal multiple C arguments into one Rust
+        # argument and unmarshal one Rust argument into multiple C arguments...
+        if not self.has_name():
+            raise Exception('Cannot use vector as a return type')
+        
+        type = self.result_value[0]['result_type']
+        value = self.result_value[0]['result_value_wrapped_rust']
+        
+        result = {}
+        if type == 'string':
+            result['value'] = 'Vec<String>'
+            result['format'] = 'single'
+            return result
+        
+        if type == 'simple':
+            if self.is_const():
+                str = '*const '
+            else:
+                str = '*mut '
+            str += value
+            result['value'] = str
+        elif type == 'refptr':
+            if self.is_const():
+                str = '*const '
+            else:
+                str = '*mut '
+            str += value
+            result['value'] = str
+        else:
+            raise Exception('Unsupported vector type: '+type)
+        
+        # vector values must be passed as a value array parameter
+        # and a size parameter
+        result['format'] = 'multi-arg'
+        return result
+    
     def is_result_map(self):
         """ Returns true if this is a map type. """
         return (self.result_type == 'map' or self.result_type == 'multimap')
@@ -1864,6 +2275,42 @@ class obj_analysis:
             elif self.result_type == 'multimap':
                 return {
                     'value' : 'cef_string_multimap_t',
+                    'format' : 'multi'
+                }
+        raise Exception('Only mappings of strings to strings are supported')
+
+    def get_result_raw_rust_map_type(self, defined_structs = []):
+        """ Return the map type. """
+        if not self.has_name():
+            raise Exception('Cannot use map as a return type')
+        if self.result_value[0]['result_type'] == 'string' \
+            and self.result_value[1]['result_type'] == 'string':
+            if self.result_type == 'map':
+                return {
+                    'value' : 'types::cef_string_map_t',
+                    'format' : 'single'
+                }
+            elif self.result_type == 'multimap':
+                return {
+                    'value' : 'types::cef_string_multimap_t',
+                    'format' : 'multi'
+                }
+        raise Exception('Only mappings of strings to strings are supported')
+
+    def get_result_rust_wrapped_map_type(self, defined_structs = []):
+        """ Return the map type. """
+        if not self.has_name():
+            raise Exception('Cannot use map as a return type')
+        if self.result_value[0]['result_type'] == 'string' \
+            and self.result_value[1]['result_type'] == 'string':
+            if self.result_type == 'map':
+                return {
+                    'value' : 'HashMap<String,String>',
+                    'format' : 'single'
+                }
+            elif self.result_type == 'multimap':
+                return {
+                    'value' : 'HashMap<String,Vec<String>>',
                     'format' : 'multi'
                 }
         raise Exception('Only mappings of strings to strings are supported')
@@ -1895,6 +2342,66 @@ class obj_analysis:
         if self.has_name():
             result += ' '+self.get_name()
 
+        return {'format' : format, 'value' : result}
+
+    def get_raw_rust(self):
+        """ Format the value for the raw Rust API. """
+        if self.has_name():
+            result = get_rust_identifier(self.get_name()) + ': '
+        else:
+            result = ''
+        
+        format = 'single'
+        if self.is_result_simple():
+            result += self.get_result_raw_rust_simple_type()
+        elif self.is_result_refptr():
+            result += self.get_result_raw_rust_refptr_type()
+        elif self.is_result_struct():
+            result += self.get_result_raw_rust_struct_type()
+        elif self.is_result_string():
+            result += self.get_result_raw_rust_string_type()
+        elif self.is_result_map():
+            resdict = self.get_result_raw_rust_map_type()
+            if resdict['format'] == 'single' or resdict['format'] == 'multi':
+                result += resdict['value']
+            else:
+                raise Exception('Unsupported map type')
+        elif self.is_result_vector():
+            resdict = self.get_result_raw_rust_vector_type()
+            if resdict['format'] != 'single':
+                format = resdict['format']
+            result += resdict['value']
+        
+        return {'format' : format, 'value' : result}
+
+    def get_wrapped_rust(self):
+        """ Format the value for the wrapped Rust API. """
+        if self.has_name():
+            result = get_rust_identifier(self.get_name()) + ': '
+        else:
+            result = ''
+        
+        format = 'single'
+        if self.is_result_simple():
+            result += self.get_result_rust_wrapped_simple_type()
+        elif self.is_result_refptr():
+            result += self.get_result_rust_wrapped_refptr_type()
+        elif self.is_result_struct():
+            result += self.get_result_rust_wrapped_struct_type()
+        elif self.is_result_string():
+            result += self.get_result_rust_wrapped_string_type()
+        elif self.is_result_map():
+            resdict = self.get_result_rust_wrapped_map_type()
+            if resdict['format'] == 'single' or resdict['format'] == 'multi':
+                result += resdict['value']
+            else:
+                raise Exception('Unsupported map type')
+        elif self.is_result_vector():
+            resdict = self.get_result_rust_wrapped_vector_type()
+            if resdict['format'] != 'single':
+                format = resdict['format']
+            result += resdict['value']
+        
         return {'format' : format, 'value' : result}
 
 

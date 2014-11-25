@@ -11,6 +11,7 @@ from make_ctocpp_header import *
 from make_ctocpp_impl import *
 from make_gypi_file import *
 from make_wrapper_types_header import *
+from make_rust_bindings import *
 from optparse import OptionParser
 
 
@@ -54,6 +55,7 @@ ctocpp_global_impl = os.path.join(libcef_dll_dir, 'wrapper', 'libcef_dll_wrapper
 wrapper_types_header = os.path.join(libcef_dll_dir, 'wrapper_types.h')
 cpptoc_dir = os.path.join(libcef_dll_dir, 'cpptoc')
 ctocpp_dir = os.path.join(libcef_dll_dir, 'ctocpp')
+rust_dir = os.path.join(libcef_dll_dir, 'rust')
 gypi_file = os.path.join(root_dir, 'cef_paths.gypi')
 
 # make sure the header directory exists
@@ -124,6 +126,17 @@ for cls in classes:
     if not options.quiet:
         sys.stdout.write('Generating '+cls+'CppToC class implementation...\n')
     writect += write_cpptoc_impl(header, cls, cpptoc_dir, options.backup)
+
+#output the C API header
+if not options.quiet:
+    sys.stdout.write('In Rust API directory '+options.rustdir+'...\n')
+filenames = sorted(header.get_file_names())
+for filename in filenames:
+    if not options.quiet:
+        sys.stdout.write('Generating '+filename+' Rust bindings...\n')
+    writect += write_rust_bindings(header,
+                                   os.path.join(rust_dir, filename),
+                                   options.backup)
 
 # output CppToC class files
 if not options.quiet:
