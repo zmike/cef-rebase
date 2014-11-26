@@ -2128,7 +2128,7 @@ class obj_analysis:
             # non-const string struct.
             return '*mut types::cef_string_t'
         # Const parameters use the const string struct.
-        return '&str'
+        return '&[u16]'
 
     def is_result_vector(self):
         """ Returns true if this is a vector type. """
