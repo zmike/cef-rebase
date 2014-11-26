@@ -581,57 +581,6 @@ elif platform == 'linux':
   valid_build_dir = None
 
   if mode == 'standard':
-    # transfer Debug files
-    build_dir = os.path.join(out_dir, 'Debug');
-    if not options.allowpartial or path_exists(os.path.join(build_dir, 'cefclient')):
-      valid_build_dir = build_dir
-      dst_dir = os.path.join(output_dir, 'Debug')
-      make_dir(dst_dir, options.quiet)
-      copy_file(os.path.join(build_dir, 'chrome_sandbox'), os.path.join(dst_dir, 'chrome-sandbox'), options.quiet)
-      copy_file(os.path.join(build_dir, lib_dir_name, 'libcef.so'), dst_dir, options.quiet)
-      copy_file(os.path.join(build_dir, 'natives_blob.bin'), dst_dir, options.quiet)
-      copy_file(os.path.join(build_dir, 'snapshot_blob.bin'), dst_dir, options.quiet)
-    else:
-      sys.stderr.write("No Debug build files.\n")
-
-  # transfer Release files
-  build_dir = os.path.join(out_dir, 'Release');
-  if not options.allowpartial or path_exists(os.path.join(build_dir, 'cefclient')):
-    valid_build_dir = build_dir
-    dst_dir = os.path.join(output_dir, 'Release')
-    make_dir(dst_dir, options.quiet)
-
-    if mode == 'client':
-      lib_dst_dir = os.path.join(dst_dir, lib_dir_name)
-      make_dir(lib_dst_dir, options.quiet)
-      copy_file(os.path.join(build_dir, lib_dir_name, 'libcef.so'), lib_dst_dir, options.quiet)
-      copy_file(os.path.join(build_dir, 'cefclient'), dst_dir, options.quiet)
-    else:
-      copy_file(os.path.join(build_dir, lib_dir_name, 'libcef.so'), dst_dir, options.quiet)
-    copy_file(os.path.join(build_dir, 'chrome_sandbox'), os.path.join(dst_dir, 'chrome-sandbox'), options.quiet)
-    copy_file(os.path.join(build_dir, 'natives_blob.bin'), dst_dir, options.quiet)
-    copy_file(os.path.join(build_dir, 'snapshot_blob.bin'), dst_dir, options.quiet)
-  else:
-    sys.stderr.write("No Release build files.\n")
-
-  if not valid_build_dir is None:
-    # transfer resource files
-    build_dir = valid_build_dir
-    if mode == 'client':
-      dst_dir = os.path.join(output_dir, 'Release')
-      copy_dir(os.path.join(build_dir, 'files'), os.path.join(dst_dir, 'files'), options.quiet)
-    else:
-      dst_dir = os.path.join(output_dir, 'Resources')
-    make_dir(dst_dir, options.quiet)
-    copy_file(os.path.join(build_dir, 'cef.pak'), dst_dir, options.quiet)
-    copy_file(os.path.join(build_dir, 'cef_100_percent.pak'), dst_dir, options.quiet)
-    copy_file(os.path.join(build_dir, 'cef_200_percent.pak'), dst_dir, options.quiet)
-    copy_file(os.path.join(build_dir, 'cef_extensions.pak'), dst_dir, options.quiet)
-    copy_file(os.path.join(build_dir, 'devtools_resources.pak'), dst_dir, options.quiet)
-    copy_file(os.path.join(build_dir, 'icudtl.dat'), dst_dir, options.quiet)
-    copy_dir(os.path.join(build_dir, 'locales'), os.path.join(dst_dir, 'locales'), options.quiet)
-
-  if mode == 'standard':
     # transfer include files
     transfer_gypi_files(cef_dir, cef_paths2['includes_linux'], \
                         'include/', include_dir, options.quiet)
