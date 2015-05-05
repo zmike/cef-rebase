@@ -369,6 +369,11 @@ typedef struct _cef_settings_t {
   // CefRequestContextSettings.accept_language_list value.
   ///
   cef_string_t accept_language_list;
+
+  ///
+  // Determines how many rendering threads are used.
+  ///
+  int rendering_threads;
 } cef_settings_t;
 
 ///
