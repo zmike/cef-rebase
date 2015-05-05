@@ -129,7 +129,7 @@ for cls in classes:
 
 #output the C API header
 if not options.quiet:
-    sys.stdout.write('In Rust API directory '+options.rustdir+'...\n')
+    sys.stdout.write('In Rust API directory '+rust_dir+'...\n')
 filenames = sorted(header.get_file_names())
 for filename in filenames:
     if not options.quiet:

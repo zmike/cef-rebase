@@ -476,8 +476,10 @@ _cre_virtual = '(?:[\s]{1,}virtual){0,1}'
 _simpletypes = {
     'void' : ['void', '', '()', '()'],
     'void*' : ['void*', 'NULL', '*mut libc::c_void', '*mut libc::c_void'],
+    'unsigned short' : ['unsigned short', '0', 'libc::c_ushort', 'libc::c_ushort'],
     'int' : ['int', '0', 'libc::c_int', 'libc::c_int'],
     'int32' : ['int32', '0', 'i32', 'i32'],
+    'unsigned int' : ['unsigned int', '0', 'u32', 'u32'],
     'uint32' : ['uint32', '0', 'u32', 'u32'],
     'int64' : ['int64', '0', 'i64', 'i64'],
     'uint64' : ['uint64', '0', 'u64', 'u64'],
@@ -485,6 +487,7 @@ _simpletypes = {
     'float' : ['float', '0', 'libc::c_float', 'libc::c_float'],
     'long' : ['long', '0', 'libc::c_long', 'libc::c_long'],
     'unsigned long' : ['unsigned long', '0', 'libc::c_ulong', 'libc::c_ulong'],
+    'unsigned long long' : ['unsigned long long', '0', 'libc::c_ulonglong', 'libc::c_ulonglong'],
     'long long' : ['long long', '0', 'libc::c_longlong', 'libc::c_longlong'],
     'size_t' : ['size_t', '0', 'libc::size_t', 'libc::size_t'],
     'bool' : ['int', '0', 'libc::c_int', 'libc::c_int'],
