@@ -181,7 +181,7 @@ use std::ptr;
         result += '  //\n'
         result += '  // The reference count. This will only be present for Rust instances!\n'
         result += '  //\n'
-        result += '  pub ref_count: uint,\n\n'
+        result += '  pub ref_count: u32,\n\n'
         result += '  //\n'
         result += '  // Extra data. This will only be present for Rust instances!\n'
         result += '  //\n'
