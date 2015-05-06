@@ -40,7 +40,8 @@ def make_wrapped_rust_member_funcs(funcs, defined_names, translate_map, indent):
         result += wrap_code(indent+'pub fn '+parts['name']+'(&self'+
                             ''.join([', ' + arg for arg in parts['args']])+') -> '+
                             parts['retval']+' {')
-        result += indent+'  if self.c_object.is_null() {\n'
+        result += indent+'  if self.c_object.is_null() ||\n'
+        result += indent+'     self.c_object as usize == mem::POST_DROP_USIZE {\n'
         result += indent+'    panic!("called a CEF method on a null object")\n'
         result += indent+'  }\n'
         result += indent+'  unsafe {\n'
@@ -159,6 +160,7 @@ use wrappers::CefWrap;
 
 use libc;
 use std::collections::HashMap;
+use std::mem;
 use std::ptr;
 """
     classes = header.get_classes(filename)
@@ -186,7 +188,7 @@ use std::ptr;
         result += '  // Extra data. This will only be present for Rust instances!\n'
         result += '  //\n'
         result += '  pub extra: u8,\n'
-        result += '} \n\npub type '+raw_classname+' = _'+raw_classname+';\n\n'
+        result += '}\n\npub type '+raw_classname+' = _'+raw_classname+';\n\n'
 
         # write wrapped Rust API
         wrapped_classname = cls.get_wrapped_rust_name(False)
@@ -201,7 +203,8 @@ use std::ptr;
         result += 'impl Clone for '+wrapped_classname+' {\n'
         result += '  fn clone(&self) -> '+wrapped_classname+'{\n'
         result += '    unsafe {\n'
-        result += '      if !self.c_object.is_null() {\n'
+        result += '      if !self.c_object.is_null() &&\n'
+        result += '          self.c_object as usize != mem::POST_DROP_USIZE {\n'
         result += '        ((*self.c_object).base.add_ref.unwrap())(&mut (*self.c_object).base);\n'
         result += '      }\n'
         result += '      '+wrapped_classname+' {\n'
@@ -213,7 +216,8 @@ use std::ptr;
         result += 'impl Drop for '+wrapped_classname+' {\n'
         result += '  fn drop(&mut self) {\n'
         result += '    unsafe {\n'
-        result += '      if !self.c_object.is_null() {\n'
+        result += '      if !self.c_object.is_null() &&\n'
+        result += '          self.c_object as usize != mem::POST_DROP_USIZE {\n'
         result += '        ((*self.c_object).base.release.unwrap())(&mut (*self.c_object).base);\n'
         result += '      }\n'
         result += '    }\n'
@@ -228,7 +232,8 @@ use std::ptr;
         result += '  }\n\n'
         result += '  pub unsafe fn from_c_object_addref(c_object: *mut '+raw_classname+') -> '+ \
             wrapped_classname+' {\n'
-        result += '    if !c_object.is_null() {\n'
+        result += '    if !c_object.is_null() &&\n'
+        result += '        c_object as usize != mem::POST_DROP_USIZE {\n'
         result += '      ((*c_object).base.add_ref.unwrap())(&mut (*c_object).base);\n'
         result += '    }\n'
         result += '    '+wrapped_classname+' {\n'
@@ -240,17 +245,18 @@ use std::ptr;
         result += '  }\n\n'
         result += '  pub fn c_object_addrefed(&self) -> *mut '+raw_classname+' {\n'
         result += '    unsafe {\n'
-        result += '      if !self.c_object.is_null() {\n'
+        result += '      if !self.c_object.is_null() &&\n'
+        result += '          self.c_object as usize != mem::POST_DROP_USIZE {\n'
         result += '        eutil::add_ref(self.c_object as *mut types::cef_base_t);\n'
         result += '      }\n'
         result += '      self.c_object\n'
         result += '    }\n'
         result += '  }\n\n'
         result += '  pub fn is_null_cef_object(&self) -> bool {\n'
-        result += '    self.c_object.is_null()\n'
+        result += '    self.c_object.is_null() || self.c_object as usize == mem::POST_DROP_USIZE\n'
         result += '  }\n'
         result += '  pub fn is_not_null_cef_object(&self) -> bool {\n'
-        result += '    !self.c_object.is_null()\n'
+        result += '    !self.c_object.is_null() && self.c_object as usize != mem::POST_DROP_USIZE\n'
         result += '  }\n'
         result += make_wrapped_rust_member_funcs(funcs, defined_names, translate_map, '  ')
         result += make_wrapped_rust_static_funcs(static_funcs,
@@ -278,7 +284,8 @@ use std::ptr;
         result += '  }\n'
         result += '  unsafe fn to_rust(c_object: *mut '+raw_classname+') -> ' +\
                 'Option<'+wrapped_classname+'> {\n'
-        result += '    if c_object.is_null() {\n'
+        result += '    if c_object.is_null() &&\n'
+        result += '       c_object as usize != mem::POST_DROP_USIZE {\n'
         result += '      None\n'
         result += '    } else {\n'
         result += '      Some(' + wrapped_classname + '::from_c_object_addref(c_object))\n'
