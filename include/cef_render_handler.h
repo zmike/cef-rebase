@@ -181,6 +181,7 @@ class CefRenderHandler : public virtual CefBase {
   // relative to screen coordinates. On HiDPI displays, the backing size
   // can differ from the view size as returned by |GetViewRect|. Return
   // true if the rectangle was provided.
+  // Only used on Mac OS.
   ///
   /*--cef()--*/
   virtual bool GetBackingRect(CefRefPtr<CefBrowser> browser,

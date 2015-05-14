@@ -167,6 +167,7 @@ typedef struct _cef_render_handler_t {
   // to screen coordinates. On HiDPI displays, the backing size can differ from
   // the view size as returned by |GetViewRect|. Return true (1) if the
   // rectangle was provided.
+  // Only used on Mac OS.
   ///
   int (CEF_CALLBACK *get_backing_rect)(struct _cef_render_handler_t* self,
       struct _cef_browser_t* browser, cef_rect_t* rect);
