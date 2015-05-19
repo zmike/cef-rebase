@@ -87,6 +87,13 @@ class CefBrowserProcessHandler : public virtual CefBase {
   virtual CefRefPtr<CefPrintHandler> GetPrintHandler() {
     return NULL;
   }
+
+  ///
+  // Called when the application should call cef_do_message_loop_work().
+  // May be called from a thread.
+  ///
+  /*--cef()--*/
+  virtual void OnWorkAvailable() {}
 };
 
 #endif  // CEF_INCLUDE_CEF_BROWSER_PROCESS_HANDLER_H_

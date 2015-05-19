@@ -94,6 +94,13 @@ typedef struct _cef_browser_process_handler_t {
   ///
   struct _cef_print_handler_t* (CEF_CALLBACK *get_print_handler)(
       struct _cef_browser_process_handler_t* self);
+
+  ///
+  // Called when the application should call cef_do_message_loop_work().
+  // May be called from a thread.
+  ///
+  void (CEF_CALLBACK *on_work_available)(
+      struct _cef_browser_process_handler_t* self);
 } cef_browser_process_handler_t;
 
 
