@@ -2200,7 +2200,7 @@ class obj_analysis:
         
         result = {}
         if type == 'string':
-            result['value'] = 'types::cef_string_list_t'
+            result['value'] = '&types::cef_string_list_t'
             result['format'] = 'single'
             return result
         
@@ -2239,7 +2239,7 @@ class obj_analysis:
         
         result = {}
         if type == 'string':
-            result['value'] = 'Vec<String>'
+            result['value'] = '&Vec<String>'
             result['format'] = 'single'
             return result
         
