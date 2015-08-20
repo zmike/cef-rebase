@@ -1,8 +1,9 @@
 # cef binding generator for servo
 
-Do NOT rely on this for building a CEF library.
-Instead, use https://github.com/pcwalton/chromium-embedded-framework
-or a build from cefbuilds.com
+Do NOT rely on this for building a CEF library. This repository
+will only contain up-to-date header files for use with either
+updating Servo's CEF bindings or compiling a native browser chrome.
+Instead, use a build from http://cefbuilds.com (thanks Adobe!)
 
 To update bindings:
 * git remote add upstream https://bitbucket.org/chromiumembedded/cef.git
