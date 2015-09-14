@@ -527,6 +527,12 @@ _simpletypes = {
     'CefPoint' : ['cef_point_t', 'CefPoint()', 'types::cef_point_t', 'types::cef_point_t'],
     'CefRect' : ['cef_rect_t', 'CefRect()', 'types::cef_rect_t', 'types::cef_rect_t'],
     'CefSize' : ['cef_size_t', 'CefSize()', 'types::cef_size_t', 'types::cef_size_t'],
+    'CefDraggableRegion' : [
+        'cef_draggable_region_t',
+        'CefDraggableRegion()',
+        'types::cef_draggable_region_t',
+        'types::cef_draggable_region_t'
+    ],
     'CefPageRange' : [
         'cef_page_range_t',
         'CefPageRange()',
